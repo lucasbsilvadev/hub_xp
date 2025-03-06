@@ -1,4 +1,4 @@
-// routes/dashboardRoutes.js
+
 const express = require("express");
 const dashboardController = require("../controllers/dashboardController");
 

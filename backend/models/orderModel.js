@@ -2,7 +2,49 @@ const db = require("../config/db");
 
 const Order = {
   getAll: (callback) => {
-    db.query("SELECT * FROM orders", callback);
+    const query = `
+      SELECT 
+        orders.id AS orderId,
+        orders.date,
+        orders.total,
+        products.id AS productId,
+        products.name,
+        products.price,
+        order_products.quantity
+      FROM orders
+      LEFT JOIN order_products ON orders.id = order_products.orderId
+      LEFT JOIN products ON order_products.productId = products.id
+    `;
+    db.query(query, (err, results) => {
+      if (err) return callback(err);
+
+      // Agrupa os produtos por pedido
+      const ordersMap = new Map();
+      results.forEach((row) => {
+        const orderId = row.orderId;
+        if (!ordersMap.has(orderId)) {
+          ordersMap.set(orderId, {
+            id: orderId,
+            date: row.date,
+            total: row.total,
+            products: [],
+          });
+        }
+
+        if (row.productId) {
+          ordersMap.get(orderId).products.push({
+            id: row.productId,
+            name: row.name,
+            price: row.price,
+            quantity: row.quantity,
+          });
+        }
+      });
+
+      // Converte o Map para um array de pedidos
+      const orders = Array.from(ordersMap.values());
+      callback(null, orders);
+    });
   },
   getById: (id, callback) => {
     db.query("SELECT * FROM orders WHERE id = ?", [id], callback);
